@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Audio API with Controls</title>
+</head>
+<body>
+  <h2>Audio API Demo</h2>
+
+  <button id="playBtn">Play</button>
+  <button id="pauseBtn">Pause</button>
+  <button id="stopBtn">Stop</button>
+
+  <script>
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    let audioBuffer;
+    let source;
+    let startTime = 0;
+    let pauseTime = 0;
+    let isPlaying = false;
+
+    // Load audio
+    fetch("sard.mp3")
+      .then(r => r.arrayBuffer())
+      .then(b => ctx.decodeAudioData(b))
+      .then(decoded => audioBuffer = decoded)
+      .catch(err => console.error("Error loading audio:", err));
+
+    function playAudio() {
+      if (!audioBuffer) return;
+
+      if (ctx.state === "suspended") ctx.resume();
+
+      if (!isPlaying) {
+        source = ctx.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(ctx.destination);
+        source.start(0, pauseTime);
+        startTime = ctx.currentTime - pauseTime;
+        isPlaying = true;
+
+        source.onended = () => {
+          isPlaying = false;
+          pauseTime = 0;
+        };
+      }
+    }
+
+    function pauseAudio() {
+      if (isPlaying && source) {
+        source.stop();
+        pauseTime = ctx.currentTime - startTime;
+        isPlaying = false;
+      }
+    }
+
+    function stopAudio() {
+      if (isPlaying && source) {
+        source.stop();
+      }
+      pauseTime = 0;
+      isPlaying = false;
+    }
+
+    // Buttons
+    document.getElementById("playBtn").onclick = playAudio;
+    document.getElementById("pauseBtn").onclick = pauseAudio;
+    document.getElementById("stopBtn").onclick = stopAudio;
+  </script>
+</body>
+</html>
